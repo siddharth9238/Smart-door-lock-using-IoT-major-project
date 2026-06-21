@@ -1,34 +1,76 @@
-Project Overview
-The system provides a multi-factor authentication approach for secure access control. It combines physical hardware components—such as RFID, fingerprint sensors, and keypads—with software-based behavioral models to verify identity and detect anomalies.
+Smart Door Lock IoT Major Project
 
-Key Features
-Multi-Modal Authentication: Supports entry via RFID, biometric fingerprint scanning, and keypad entry.
+A comprehensive IoT-based security solution integrating hardware automation, mobile/web access, and machine learning-driven anomaly detection. This project provides a secure, multi-layered entry system for residential and enterprise applications. The system utilizes multi-factor authentication and behavioral modeling to verify identity and detect unauthorized access patterns.
 
-Advanced Security: Incorporates voice authentication and anomaly detection to identify unauthorized patterns.
+🚀 Key Features
 
-IoT Integration: Utilizes Arduino and ESP32-CAM for hardware control and sensor data processing.
+Multi-Factor Authentication: Support for RFID, Fingerprint, Keypad Patterns, and Voice Auth.
 
-Behavioral Modeling: Implements a machine learning-based behavioral model to monitor and predict security threats.
+Hardware Integration: ESP32/Arduino-based locking mechanism with PIR motion sensors, ultrasonic proximity alerts, and ESP32-CAM support.
 
-Mobile & Server Backend: Includes a dedicated mobile interface (Dart) and a Node.js server for managing door lock states and user data.
+Mobile Access: Flutter-based mobile application for on-the-go secure door control.
 
-Technologies Used
-Hardware: Arduino, ESP32-CAM, RFID Module, Fingerprint Sensor, Keypad, Buzzer, Ultrasonic Sensor, PIR Sensor.
+Web Dashboard: Admin interface (React/Bootstrap/Tailwind) for real-time monitoring, access log management, and system configuration.
 
-Backend: Node.js (server.js).
+AI-Powered Security: Python-based anomaly detection engine and behavioral models to identify irregular access patterns.
 
-Mobile: Dart (main.dart).
+Robust Backend: Node.js/Express server providing RESTful APIs, RBAC (Role-Based Access Control), and secure data logging.
 
-Data & AI: Python (for voice_auth.py and anomaly_detector.py), Jupyter Notebooks (behavioral_model.ipynb), and CSV datasets.
+🛠️ Technology Stack
 
-Project Structure
-Arduino Firmware: .ino files for specific components (Buzzer, LCD, PIR, RFID, Fingerprint) and integrated system logic.
+Domain
 
-Analytics & AI: Python scripts for anomaly detection, voice recognition, and model training.
+Technologies
 
-Backend & App: Server-side logic and mobile application code.
+Hardware
 
-Data: Sample datasets for behavioral analysis.
+ESP32, Arduino, ESP32-CAM, RFID Module, Fingerprint Sensor, PIR, LCD, Ultrasonic, Keypad, Buzzer
 
-______________________________________________________________________________________________________________________________________________________
-This project was developed as a major initiative focusing on the intersection of IoT and intelligent security systems.
+Backend
+
+Node.js, Express.js, RESTful APIs
+
+Frontend
+
+Flutter (Mobile), React, HTML5, Bootstrap, Tailwind CSS
+
+AI/ML
+
+Python (Jupyter, Pandas, NumPy, Anomaly Detection, Voice Auth)
+
+Tools
+
+Git, VS Code, Postman, Maven, IntelliJ IDEA
+
+🏗️ System Architecture
+
+The system uses an IoT-driven architecture. Hardware modules communicate via Wi-Fi/Serial to a central Node.js backend. The backend manages authentication, logging, and state, while simultaneously serving the Flutter mobile app and the Admin Web Dashboard. The Python ML module analyzes historical log data and behavioral datasets to flag potential security threats.
+
+📂 Project Structure
+
+/
+├── ESP32_Integration/    # Arduino Firmware (.ino files for sensors/logic)
+├── public/               # Web Dashboard (HTML/Bootstrap/Tailwind)
+├── server.js             # Node.js backend API
+├── main.dart             # Flutter mobile application
+├── anomaly_detector.py   # AI Anomaly detection scripts
+├── voice_auth.py         # Voice authentication logic
+├── behavioral_model.ipynb# Jupyter Notebook for model training
+└── data/                 # Sample datasets for behavioral analysis
+
+
+⚙️ Getting Started
+
+Clone the Repository:
+git clone https://github.com/siddharth9238/Smart-door-lock-using-IoT-major-project.git
+
+Install Backend Dependencies:
+npm install express cors
+
+Run the Server:
+node server.js
+
+Access the Dashboard:
+Open http://localhost:3000 in your browser.
+
+Developed as a Major Project. All rights reserved.
