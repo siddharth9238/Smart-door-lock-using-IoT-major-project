@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Door Lock IoT Dashboard</title>
+
+    <!-- Load Bootstrap CSS for Grid and Basic Components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS for Utility Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configure Tailwind to avoid conflicting with Bootstrap classes where possible -->
+    <script>
+        tailwind.config = {
+            prefix: 'tw-', // Prefix Tailwind classes to avoid clashes with Bootstrap
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        darkBg: '#1e293b',
+                        cardBg: '#2a3b4c'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .dark-mode .card {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #f8fafc;
+        }
+        
+        .dark-mode .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        .dark-mode .table {
+            color: #f8fafc;
+        }
+        
+        .dark-mode .table-hover>tbody>tr:hover>* {
+            color: #f8fafc;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark-mode .modal-content {
+             background-color: #1e293b;
+             color: white;
+             border-color: #334155;
+        }
+        .dark-mode .modal-header {
+            border-bottom-color: #334155;
+        }
+        .dark-mode .modal-footer {
+            border-top-color: #334155;
+        }
+
+        /* Status Indicator Animations */
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.online {
+            background-color: #10b981;
+            animation: pulse-green 2s infinite;
+        }
+
+        .status-dot.offline {
+            background-color: #ef4444;
+            animation: pulse-red 2s infinite;
+        }
+
+        /* Custom Lock Button Styling */
+        .lock-btn {
+            transition: all 0.3s ease;
+            transform: scale(1);
+        }
+
+        .lock-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .card {
+            border-radius: 1rem;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body class="tw-antialiased dark-mode">
+
+    <nav class="navbar navbar-expand-lg navbar-dark tw-bg-slate-900 tw-border-b tw-border-slate-800 tw-py-4">
+        <div class="container">
+            <a class="navbar-brand tw-font-bold tw-flex tw-items-center tw-gap-2" href="#">
+                <i class="fas fa-shield-halved tw-text-blue-500 tw-text-2xl"></i>
+                <span class="tw-tracking-tight">SecureIoT Lock</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto tw-items-center">
+                    <li class="nav-item tw-mr-4">
+                        <div class="tw-flex tw-items-center tw-gap-2 tw-text-sm tw-font-medium">
+                            <span class="status-dot online" id="system-status-dot"></span>
+                            <span id="system-status-text" class="tw-text-emerald-400">System Online</span>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <button id="themeToggle" class="btn btn-outline-light tw-rounded-full tw-w-10 tw-h-10 tw-flex tw-items-center tw-justify-center">
+                            <i class="fas fa-sun" id="themeIcon"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container tw-py-8">
+        
+        <!-- Header Section -->
+        <div class="row tw-mb-8">
+            <div class="col-12 tw-flex tw-justify-between tw-items-end">
+                <div>
+                    <h2 class="tw-text-2xl tw-font-bold tw-mb-1">Dashboard Overview</h2>
+                    <p class="text-muted tw-text-sm tw-m-0">Monitor and control your smart door lock system.</p>
+                </div>
+                <div class="tw-text-right">
+                    <p class="tw-text-sm text-muted tw-m-0" id="current-date">Loading date...</p>
+                    <p class="tw-text-xl tw-font-bold tw-m-0" id="current-time">--:--:--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards Row -->
+        <div class="row g-4 tw-mb-8">
+            <!-- Lock Status Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card tw-h-full">
+                    <div class="card-body tw-p-6">
+                        <div class="tw-flex tw-justify-between tw-items-start tw-mb-4">
+                            <div>
+                                <p class="text-muted tw-text-sm tw-font-medium tw-mb-1">Current State</p>
+                                <h3 class="tw-text-2xl tw-font-bold" id="lock-state-display">LOCKED</h3>
+                            </div>
+                            <div class="icon-box tw-bg-red-500/10 tw-text-red-500" id="lock-icon-container">
+                                <i class="fas fa-lock tw-text-xl" id="lock-icon"></i>
+                            </div>
+                        </div>
+                        <p class="tw-text-xs text-muted tw-m-0">
+                            Last changed: <span id="last-changed-time" class="tw-font-medium">2 mins ago</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Battery Level Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card tw-h-full">
+                    <div class="card-body tw-p-6">
+                        <div class="tw-flex tw-justify-between tw-items-start tw-mb-4">
+                            <div>
+                                <p class="text-muted tw-text-sm tw-font-medium tw-mb-1">Battery Level</p>
+                                <h3 class="tw-text-2xl tw-font-bold">84%</h3>
+                            </div>
+                            <div class="icon-box tw-bg-emerald-500/10 tw-text-emerald-500">
+                                <i class="fas fa-battery-three-quarters tw-text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="progress tw-h-2 tw-bg-slate-200 dark:tw-bg-slate-700 tw-rounded-full">
+                            <div class="progress-bar tw-bg-emerald-500" role="progressbar" style="width: 84%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WiFi Signal Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card tw-h-full">
+                    <div class="card-body tw-p-6">
+                        <div class="tw-flex tw-justify-between tw-items-start tw-mb-4">
+                            <div>
+                                <p class="text-muted tw-text-sm tw-font-medium tw-mb-1">Connection</p>
+                                <h3 class="tw-text-2xl tw-font-bold">Excellent</h3>
+                            </div>
+                            <div class="icon-box tw-bg-blue-500/10 tw-text-blue-500">
+                                <i class="fas fa-wifi tw-text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="tw-text-xs text-muted tw-m-0">
+                            Signal Strength: <span class="tw-font-medium tw-text-blue-500">-45 dBm</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Attempts Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card tw-h-full">
+                    <div class="card-body tw-p-6">
+                        <div class="tw-flex tw-justify-between tw-items-start tw-mb-4">
+                            <div>
+                                <p class="text-muted tw-text-sm tw-font-medium tw-mb-1">Today's Access</p>
+                                <h3 class="tw-text-2xl tw-font-bold">12</h3>
+                            </div>
+                            <div class="icon-box tw-bg-purple-500/10 tw-text-purple-500">
+                                <i class="fas fa-users tw-text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="tw-text-xs text-muted tw-m-0">
+                            <span class="tw-text-red-500 tw-font-medium"><i class="fas fa-exclamation-circle tw-mr-1"></i>2 Failed</span> attempts
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            
+            <!-- Primary Controls Column -->
+            <div class="col-lg-5">
+                <!-- Main Lock Toggle -->
+                <div class="card tw-mb-4">
+                    <div class="card-body tw-p-8 tw-text-center tw-flex tw-flex-col tw-items-center tw-justify-center tw-min-h-[300px]">
+                        <h4 class="tw-font-bold tw-mb-6">Main Control</h4>
+                        
+                        <!-- Big Toggle Button -->
+                        <button id="main-lock-btn" class="lock-btn tw-w-40 tw-h-40 tw-rounded-full tw-bg-red-500 tw-text-white tw-shadow-[0_0_30px_rgba(239,68,68,0.4)] tw-border-4 tw-border-red-400 tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2 focus:tw-outline-none">
+                            <i class="fas fa-lock tw-text-4xl" id="main-btn-icon"></i>
+                            <span class="tw-font-bold tw-tracking-widest" id="main-btn-text">LOCKED</span>
+                        </button>
+                        
+                        <p class="text-muted tw-text-sm tw-mt-6 tw-mb-0" id="main-btn-subtext">Tap to unlock the door securely</p>
+                    </div>
+                </div>
+
+                <!-- Feature Toggles -->
+                <div class="card">
+                    <div class="card-body tw-p-6">
+                        <h5 class="tw-font-bold tw-mb-4 tw-text-lg">Feature Settings</h5>
+                        
+                        <div class="tw-flex tw-justify-between tw-items-center tw-py-3 tw-border-b tw-border-slate-200 dark:tw-border-slate-700">
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <div class="tw-w-8 tw-h-8 tw-rounded-lg tw-bg-blue-500/10 tw-text-blue-500 tw-flex tw-items-center tw-justify-center">
+                                    <i class="fas fa-id-card"></i>
+                                </div>
+                                <div>
+                                    <p class="tw-font-medium tw-m-0 tw-text-sm">RFID Scanner</p>
+                                    <p class="text-muted tw-text-xs tw-m-0">Enable card access</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tw-scale-125 tw-cursor-pointer" type="checkbox" role="switch" checked>
+                            </div>
+                        </div>
+
+                        <div class="tw-flex tw-justify-between tw-items-center tw-py-3 tw-border-b tw-border-slate-200 dark:tw-border-slate-700">
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <div class="tw-w-8 tw-h-8 tw-rounded-lg tw-bg-orange-500/10 tw-text-orange-500 tw-flex tw-items-center tw-justify-center">
+                                    <i class="fas fa-fingerprint"></i>
+                                </div>
+                                <div>
+                                    <p class="tw-font-medium tw-m-0 tw-text-sm">Fingerprint</p>
+                                    <p class="text-muted tw-text-xs tw-m-0">Biometric sensor</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tw-scale-125 tw-cursor-pointer" type="checkbox" role="switch" checked>
+                            </div>
+                        </div>
+
+                        <div class="tw-flex tw-justify-between tw-items-center tw-py-3 tw-border-b tw-border-slate-200 dark:tw-border-slate-700">
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <div class="tw-w-8 tw-h-8 tw-rounded-lg tw-bg-purple-500/10 tw-text-purple-500 tw-flex tw-items-center tw-justify-center">
+                                    <i class="fas fa-person-walking"></i>
+                                </div>
+                                <div>
+                                    <p class="tw-font-medium tw-m-0 tw-text-sm">PIR Motion</p>
+                                    <p class="text-muted tw-text-xs tw-m-0">Detect approach</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tw-scale-125 tw-cursor-pointer" type="checkbox" role="switch" checked>
+                            </div>
+                        </div>
+
+                        <div class="tw-flex tw-justify-between tw-items-center tw-py-3">
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <div class="tw-w-8 tw-h-8 tw-rounded-lg tw-bg-red-500/10 tw-text-red-500 tw-flex tw-items-center tw-justify-center">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div>
+                                    <p class="tw-font-medium tw-m-0 tw-text-sm">Intruder Alarm</p>
+                                    <p class="text-muted tw-text-xs tw-m-0">Buzzer on anomalies</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tw-scale-125 tw-cursor-pointer" type="checkbox" role="switch" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Log Column -->
+            <div class="col-lg-7">
+                <div class="card tw-h-full">
+                    <div class="card-body tw-p-6 tw-flex tw-flex-col">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-4">
+                            <h5 class="tw-font-bold tw-text-lg tw-m-0">Recent Access Logs</h5>
+                            <button class="btn btn-sm btn-outline-primary tw-text-xs tw-font-medium" data-bs-toggle="modal" data-bs-target="#registerModal">
+                                <i class="fas fa-plus tw-mr-1"></i> Register New User
+                            </button>
+                        </div>
+
+                        <div class="table-responsive tw-flex-grow">
+                            <table class="table table-hover tw-align-middle">
+                                <thead>
+                                    <tr class="tw-text-xs tw-uppercase text-muted tw-border-slate-200 dark:tw-border-slate-700">
+                                        <th class="tw-font-semibold tw-py-3">User/Method</th>
+                                        <th class="tw-font-semibold tw-py-3">Event</th>
+                                        <th class="tw-font-semibold tw-py-3">Time</th>
+                                        <th class="tw-font-semibold tw-py-3 text-end">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="tw-text-sm" id="log-table-body">
+                                    <!-- Log rows will be generated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="tw-text-center tw-mt-4">
+                            <a href="#" class="tw-text-sm tw-text-blue-500 tw-font-medium tw-no-underline hover:tw-underline">View Complete History</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register User Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content tw-rounded-xl tw-border-none tw-shadow-2xl">
+                <div class="modal-header tw-border-slate-200 dark:tw-border-slate-700 tw-py-3">
+                    <h5 class="modal-title tw-font-bold tw-flex tw-items-center tw-gap-2">
+                        <i class="fas fa-user-plus tw-text-blue-500"></i> Register Access
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body tw-p-5">
+                    <form id="registerForm">
+                        <div class="tw-mb-4">
+                            <label class="form-label tw-text-sm tw-font-medium">Name / Identifier</label>
+                            <input type="text" class="form-control tw-bg-slate-100 dark:tw-bg-slate-800 tw-border-none focus:tw-ring-2 focus:tw-ring-blue-500" placeholder="e.g. John Doe" required>
+                        </div>
+                        <div class="tw-mb-4">
+                            <label class="form-label tw-text-sm tw-font-medium">Access Method</label>
+                            <select class="form-select tw-bg-slate-100 dark:tw-bg-slate-800 tw-border-none focus:tw-ring-2 focus:tw-ring-blue-500">
+                                <option value="rfid">RFID Card</option>
+                                <option value="fingerprint">Fingerprint</option>
+                                <option value="pattern">Keypad Pattern</option>
+                                <option value="voice">Voice Auth</option>
+                            </select>
+                        </div>
+                        
+                        <div class="tw-bg-blue-500/10 tw-border tw-border-blue-500/20 tw-rounded-lg tw-p-4 tw-text-center tw-mt-6">
+                            <i class="fas fa-rss tw-text-blue-500 tw-text-3xl tw-mb-2 tw-animate-pulse"></i>
+                            <p class="tw-text-sm tw-m-0">Please scan card or place finger on the sensor now...</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer tw-border-slate-200 dark:tw-border-slate-700 tw-py-3">
+                    <button type="button" class="btn btn-light tw-text-sm tw-font-medium" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary tw-text-sm tw-font-medium tw-bg-blue-600 tw-border-none hover:tw-bg-blue-700" onclick="simulateRegistration()">Save Registration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Message Box (Instead of native alert) -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body tw-font-medium" id="toastMessage">
+                    Action completed successfully.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- State Variables ---
+            let isLocked = true;
+            
+            // --- Elements ---
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            const mainLockBtn = document.getElementById('main-lock-btn');
+            const mainBtnIcon = document.getElementById('main-btn-icon');
+            const mainBtnText = document.getElementById('main-btn-text');
+            const mainBtnSubtext = document.getElementById('main-btn-subtext');
+            
+            const stateDisplay = document.getElementById('lock-state-display');
+            const iconContainer = document.getElementById('lock-icon-container');
+            const lockIcon = document.getElementById('lock-icon');
+            const timeDisplay = document.getElementById('last-changed-time');
+            
+            const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            const toastList = toastElList.map(function (toastEl) {
+              return new bootstrap.Toast(toastEl, { delay: 3000 });
+            });
+            const toastContainer = document.getElementById('liveToast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            // --- Clock Logic ---
+            function updateClock() {
+                const now = new Date();
+                const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', dateOptions);
+                document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            // --- Theme Toggle Logic ---
+            themeToggle.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                if (body.classList.contains('dark-mode')) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                    themeToggle.classList.remove('btn-outline-dark');
+                    themeToggle.classList.add('btn-outline-light');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                    themeToggle.classList.remove('btn-outline-light');
+                    themeToggle.classList.add('btn-outline-dark');
+                }
+            });
+
+            // --- Lock Toggle Logic ---
+            function updateLockUI() {
+                if (isLocked) {
+                    // Update Main Button
+                    mainLockBtn.className = "lock-btn tw-w-40 tw-h-40 tw-rounded-full tw-bg-red-500 tw-text-white tw-shadow-[0_0_30px_rgba(239,68,68,0.4)] tw-border-4 tw-border-red-400 tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2 focus:tw-outline-none";
+                    mainBtnIcon.className = "fas fa-lock tw-text-4xl";
+                    mainBtnText.innerText = "LOCKED";
+                    mainBtnSubtext.innerText = "Tap to unlock the door securely";
+                    
+                    // Update Status Card
+                    stateDisplay.innerText = "LOCKED";
+                    stateDisplay.className = "tw-text-2xl tw-font-bold tw-text-red-500";
+                    iconContainer.className = "icon-box tw-bg-red-500/10 tw-text-red-500";
+                    lockIcon.className = "fas fa-lock tw-text-xl";
+                } else {
+                    // Update Main Button
+                    mainLockBtn.className = "lock-btn tw-w-40 tw-h-40 tw-rounded-full tw-bg-emerald-500 tw-text-white tw-shadow-[0_0_30px_rgba(16,185,129,0.4)] tw-border-4 tw-border-emerald-400 tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2 focus:tw-outline-none";
+                    mainBtnIcon.className = "fas fa-lock-open tw-text-4xl";
+                    mainBtnText.innerText = "UNLOCKED";
+                    mainBtnSubtext.innerText = "Tap to secure the door";
+                    
+                    // Update Status Card
+                    stateDisplay.innerText = "UNLOCKED";
+                    stateDisplay.className = "tw-text-2xl tw-font-bold tw-text-emerald-500";
+                    iconContainer.className = "icon-box tw-bg-emerald-500/10 tw-text-emerald-500";
+                    lockIcon.className = "fas fa-lock-open tw-text-xl";
+                }
+                
+                timeDisplay.innerText = "Just now";
+            }
+
+            function showToast(msg, type = 'success') {
+                toastMessage.innerText = msg;
+                if(type === 'success') {
+                    toastContainer.className = "toast align-items-center text-white bg-success border-0";
+                } else if(type === 'danger') {
+                    toastContainer.className = "toast align-items-center text-white bg-danger border-0";
+                } else {
+                    toastContainer.className = "toast align-items-center text-white bg-primary border-0";
+                }
+                toastList[0].show();
+            }
+
+            mainLockBtn.addEventListener('click', async () => {
+                // Show loading state while waiting for hardware
+                mainBtnIcon.className = "fas fa-spinner fa-spin tw-text-4xl";
+                mainBtnText.innerText = "WAIT...";
+                
+                try {
+                    // 1. Send actual request to your server.js
+                    // Note: Update the URL '/api/toggle-lock' to match your actual Node.js route
+                    const response = await fetch('/api/toggle-lock', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ command: isLocked ? 'unlock' : 'lock' })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // 2. Hardware responded successfully, update UI
+                        isLocked = !isLocked;
+                        updateLockUI();
+                        
+                        const action = isLocked ? "Door locked" : "Door unlocked";
+                        showToast(`${action} successfully via IoT.`, isLocked ? 'danger' : 'success');
+                        
+                        // Add log locally (or wait for the next fetchLogs update)
+                        addLogEntry("Admin Dashboard", "Remote Command", isLocked ? "Locked" : "Unlocked", true);
+                    } else {
+                        // Hardware failed or rejected
+                        showToast("Error: Hardware did not respond.", 'danger');
+                        updateLockUI(); // Revert to actual state
+                    }
+                } catch (error) {
+                    console.error("Network Error:", error);
+                    showToast("Error: Could not reach Node.js server.", 'danger');
+                    updateLockUI(); // Revert UI
+                }
+            });
+
+            // --- Mock Data for Logs (Change this to start empty) ---
+            let mockLogs = [];
+
+            const logTableBody = document.getElementById('log-table-body');
+
+            function getIconForType(type) {
+                switch(type) {
+                    case 'rfid': return '<i class="fas fa-id-card tw-text-blue-500 tw-w-5"></i>';
+                    case 'fingerprint': return '<i class="fas fa-fingerprint tw-text-orange-500 tw-w-5"></i>';
+                    case 'pattern': return '<i class="fas fa-border-all tw-text-indigo-500 tw-w-5"></i>';
+                    case 'motion': return '<i class="fas fa-person-walking tw-text-purple-500 tw-w-5"></i>';
+                    default: return '<i class="fas fa-desktop tw-text-slate-500 tw-w-5"></i>';
+                }
+            }
+
+            function getBadgeForStatus(success) {
+                if(success === true) return '<span class="badge tw-bg-emerald-500/20 tw-text-emerald-500 tw-px-2 tw-py-1 tw-rounded-md">Granted</span>';
+                if(success === false) return '<span class="badge tw-bg-red-500/20 tw-text-red-500 tw-px-2 tw-py-1 tw-rounded-md">Denied</span>';
+                return '<span class="badge tw-bg-slate-500/20 tw-text-slate-500 dark:tw-text-slate-300 tw-px-2 tw-py-1 tw-rounded-md">Info</span>';
+            }
+
+            function renderLogs() {
+                logTableBody.innerHTML = '';
+                mockLogs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.className = "tw-border-slate-200 dark:tw-border-slate-700/50";
+                    tr.innerHTML = `
+                        <td class="tw-py-3">
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                ${getIconForType(log.type)}
+                                <span class="tw-font-medium">${log.user}</span>
+                            </div>
+                        </td>
+                        <td class="tw-py-3 text-muted">${log.event}</td>
+                        <td class="tw-py-3 text-muted">${log.time}</td>
+                        <td class="tw-py-3 text-end">${getBadgeForStatus(log.success)}</td>
+                    `;
+                    logTableBody.appendChild(tr);
+                });
+            }
+
+            function addLogEntry(user, event, statusText, success) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit' });
+                
+                mockLogs.unshift({
+                    user: user,
+                    type: 'dashboard',
+                    event: event,
+                    time: timeString,
+                    success: success
+                });
+                
+                if(mockLogs.length > 5) mockLogs.pop();
+                renderLogs();
+            }
+
+            // --- Real Data Polling ---
+            // 3. Fetch real logs from your database/server periodically
+            async function fetchRealLogs() {
+                try {
+                    const response = await fetch('/api/logs'); // Replace with your actual route
+                    const data = await response.json();
+                    
+                    if(data && data.logs) {
+                        mockLogs = data.logs; // Replace mock array with real database array
+                        renderLogs();
+                    }
+                } catch (error) {
+                    console.log("Waiting for backend API to be ready...");
+                }
+            }
+
+            // Initial render
+            renderLogs();
+            fetchRealLogs(); // Try fetching immediately
+            
+            // Expose simulateRegistration to window for the modal button
+            window.simulateRegistration = async function() {
+                const modalEl = document.getElementById('registerModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+                showToast("Sensor waiting for input. Proceed to the physical device.", 'primary');
+                
+                // Example of sending a command to put hardware in "Enroll" mode
+                try {
+                    await fetch('/api/enroll-mode', { method: 'POST' });
+                } catch(e) {}
+
+                document.getElementById('registerForm').reset();
+            }
+            
+            // Poll for new hardware events every 5 seconds (Replaced random generator)
+            setInterval(fetchRealLogs, 5000);
+            
+            // Poll to sync the lock status (in case someone uses a physical key or RFID)
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    if(data.isLocked !== isLocked) {
+                        isLocked = data.isLocked;
+                        updateLockUI();
+                    }
+                } catch (e) {}
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
